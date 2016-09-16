@@ -27,15 +27,20 @@ public class Player {
             int best_value_move=value_loss;
             int tmp_value_move;
             GameState best_move=nextStates.firstElement();
-            System.err.println("new turn --------------------------------------");
+            System.err.println("new turn -------------------------------------------------");
             for(GameState tmp_state: nextStates){ 
-                tmp_value_move=searchMinMax(tmp_state,value_loss,value_win, 
+                tmp_value_move=searchMinMax(tmp_state, 
                         Constants.CELL_O, 0);
+                    System.err.println(tmp_value_move);
+                    System.err.println(tmp_state.toString(Constants.CELL_O));
                     //System.err.println(tmp_value_move);
-                    //System.err.println(tmp_state.toString(Constants.CELL_O));
-                    //System.err.println(tmp_value_move);
+                    //System.err.println(value(tmp_state, Constants.CELL_X));
                     //System.err.println(tmp_state.isEOG());
-                if( tmp_value_move>best_value_move){
+                if( tmp_value_move>=best_value_move){
+                    if(tmp_state.isXWin()){
+                        best_move=tmp_state;
+                        break;
+                    }
                     best_value_move=tmp_value_move;
                     best_move=tmp_state;
 
@@ -47,13 +52,13 @@ public class Player {
 
         else{
             Random random = new Random();
-            GameState move=nextStates.elementAt(random.nextInt(nextStates.size()));
+            GameState move=nextStates.elementAt(
+                    random.nextInt(nextStates.size()));
             return move;
         }
     }
 
-    public int searchMinMax(GameState game_state, int alpha, 
-            int beta, int player, int depth){
+    public int searchMinMax(GameState game_state, int player, int depth){
         Vector<GameState> nextStates = new Vector<>();
         game_state.findPossibleMoves(nextStates);
         int best_move;
@@ -61,7 +66,8 @@ public class Player {
         if(game_state.isEOG()){
             return valueEnd(game_state);
         }
-        else if(depth==4){
+        else if(depth==3){
+                    
             if(player==Constants.CELL_X){
                 return value(game_state, Constants.CELL_X)
                         -value(game_state, Constants.CELL_O);
@@ -77,26 +83,18 @@ public class Player {
         if(Constants.CELL_X==player){
             best_move=value_loss;
             for(GameState state:nextStates){
-                int move = searchMinMax(state, alpha, beta,
+                int move = searchMinMax(state,
                         Constants.CELL_O, depth+1);
                 best_move=Math.max(move, best_move);
-                alpha=Math.max(best_move, alpha);
-                if (beta<=alpha){
-                    break;
-                }
             }
             return best_move;
         }
         else{
             best_move=value_win;
             for(GameState state:nextStates){
-                int move = searchMinMax(state, alpha, beta,
+                int move = searchMinMax(state,
                         Constants.CELL_X, depth+1);
                 best_move=Math.min(move, best_move);
-                beta=Math.min(best_move, beta);
-                if(beta<=alpha){
-                    break;
-                }
             }
             return best_move;
             
@@ -121,10 +119,33 @@ public class Player {
     }
     public int value(GameState game_state, int player){
         return valueRows(game_state, player)
-            + valueColumns(game_state, player);
+            + valueColumns(game_state, player)
+                +valueDiagonals(game_state, player);
     }
-    public int valueDiagonals(GameState game_state){
-        return 0;
+    public int valueDiagonals(GameState game_state, int player){
+        return valueDiagonal(game_state, player, 0,-1)+
+                valueDiagonal(game_state, player, 3,1);
+    }
+    public int valueDiagonal(GameState game_state, int player,
+            int start_row, int up_or_down){
+        // 1 for go up and -1 for go down
+        int tmp_value_diagonal=0;
+        int col=0;
+        int cell=game_state.at(start_row,col);
+        while(cell!=Constants.CELL_INVALID){
+            if(cell==player){
+                tmp_value_diagonal++;
+            }
+            else if(cell== Constants.CELL_EMPTY){}
+            else{
+                tmp_value_diagonal=0;
+                break;
+            }
+            col++;
+            start_row+=up_or_down;
+            cell=game_state.at(start_row,col);
+        }
+        return tmp_value_diagonal*tmp_value_diagonal;
     }
     public int valueRows(GameState game_state, int player){
         int col;
@@ -139,9 +160,10 @@ public class Player {
                 if(cell==player){
                     tmp_value_row++;
                 }
-                else if(cell!=player){
+                else if(cell==Constants.CELL_EMPTY){}
+                else{
                     tmp_value_row=0;
-                    break;
+                    break; 
                 }
                 col++;
                 cell=game_state.at(row, col);
@@ -166,7 +188,9 @@ public class Player {
                 if(cell==player){
                     tmp_value_column++;
                 }
-                else if(cell!=player){
+                else if(cell==Constants.CELL_EMPTY){
+                }
+                else{
                     tmp_value_column=0;
                     break;
                 }
