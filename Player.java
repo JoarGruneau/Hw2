@@ -30,12 +30,9 @@ public class Player {
             System.err.println("new turn -------------------------------------------------");
             for(GameState tmp_state: nextStates){ 
                 tmp_value_move=searchMinMax(tmp_state, 
-                        Constants.CELL_O, 0);
+                        Constants.CELL_O, 5, value_loss,value_win);
                     System.err.println(tmp_value_move);
                     System.err.println(tmp_state.toString(Constants.CELL_O));
-                    //System.err.println(tmp_value_move);
-                    //System.err.println(value(tmp_state, Constants.CELL_X));
-                    //System.err.println(tmp_state.isEOG());
                 if( tmp_value_move>=best_value_move){
                     if(tmp_state.isXWin()){
                         best_move=tmp_state;
@@ -58,7 +55,8 @@ public class Player {
         }
     }
 
-    public int searchMinMax(GameState game_state, int player, int depth){
+    public int searchMinMax(GameState game_state, int player, int depth, 
+            int alpha, int beta){
         Vector<GameState> nextStates = new Vector<>();
         game_state.findPossibleMoves(nextStates);
         int best_move;
@@ -66,7 +64,7 @@ public class Player {
         if(game_state.isEOG()){
             return valueEnd(game_state);
         }
-        else if(depth==3){
+        else if(depth==0){
                     
             if(player==Constants.CELL_X){
                 return value(game_state, Constants.CELL_X)
@@ -84,19 +82,30 @@ public class Player {
             best_move=value_loss;
             for(GameState state:nextStates){
                 int move = searchMinMax(state,
-                        Constants.CELL_O, depth+1);
-                best_move=Math.max(move, best_move);
+                        Constants.CELL_O, depth-1, alpha, beta);
+                if(move>=beta){
+                    return beta;
+                }
+                else if(move>alpha){
+                    alpha=move;
+                }
+                //best_move=Math.max(move, best_move);
             }
-            return best_move;
+            return alpha;
         }
         else{
             best_move=value_win;
             for(GameState state:nextStates){
                 int move = searchMinMax(state,
-                        Constants.CELL_X, depth+1);
-                best_move=Math.min(move, best_move);
+                        Constants.CELL_X, depth-1, alpha,beta);
+                if(move<=alpha){
+                    return alpha;
+                }
+                else if(move<beta){
+                    beta=move;
+                }
             }
-            return best_move;
+            return beta;
             
         }
         }
