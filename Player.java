@@ -34,7 +34,7 @@ public class Player {
                     System.err.println(tmp_value_move);
                     System.err.println(tmp_state.toString(Constants.CELL_O));
                 if( tmp_value_move>=best_value_move){
-                    if(tmp_state.isXWin()){
+                    if(tmp_state.isXWin()){ // Prohibits slow play, otherwise alg will value a win 3 moves away same as this
                         best_move=tmp_state;
                         break;
                     }
@@ -58,7 +58,7 @@ public class Player {
     public int searchMinMax(GameState game_state, int player, int depth, 
             int alpha, int beta){
         Vector<GameState> nextStates = new Vector<>();
-        game_state.findPossibleMoves(nextStates);
+        game_state.findPossibleMoves(nextStates); // I guess you can run this after depth check and EOG check to save time?
         int best_move;
 
         if(game_state.isEOG()){
@@ -145,7 +145,7 @@ public class Player {
             if(cell==player){
                 tmp_value_diagonal++;
             }
-            else if(cell== Constants.CELL_EMPTY){}
+            else if(cell== Constants.CELL_EMPTY){}  // Why not include this in the next else?
             else{
                 tmp_value_diagonal=0;
                 break;
@@ -154,7 +154,7 @@ public class Player {
             start_row+=up_or_down;
             cell=game_state.at(start_row,col);
         }
-        return tmp_value_diagonal*tmp_value_diagonal;
+        return tmp_value_diagonal*tmp_value_diagonal; // Maybe generalize to Math.pow(tmp_value_diagonal, some_factor).
     }
     public int valueRows(GameState game_state, int player){
         int col;
@@ -175,10 +175,10 @@ public class Player {
                     break; 
                 }
                 col++;
-                cell=game_state.at(row, col);
+                cell=game_state.at(row, col); // weird to update cell in final step of loop, but w/e
                 
             }
-            tmp_value+=tmp_value_row*tmp_value_row;
+            tmp_value+=tmp_value_row*tmp_value_row; // Generalize with Math.pow
             row++;
             cell=game_state.at(row, 0);
         }
@@ -207,7 +207,7 @@ public class Player {
                 cell=game_state.at(row, col);
                 
             }
-            tmp_value+=tmp_value_column*tmp_value_column;
+            tmp_value+=tmp_value_column*tmp_value_column; // generalize with math.pow
             col++;
             cell=game_state.at(0, col);
         }

@@ -8,9 +8,9 @@ public class Constants {
    * to this and the other player
    */
   public static final int CELL_EMPTY   = 0;      ///< the cell is empty
-  public static final int CELL_X       = 1;      ///< the cell belongs to the X player
-  public static final int CELL_O       = 2;      ///< the cell belongs to the O player
-  public static final int CELL_INVALID = 3;      ///< the cell is invalid
+  public static final int CELL_X       = 1; 	 ///< the cell belongs to the X player
+  public static final int CELL_O       = 2; 	 ///< the cell belongs to the O player
+  public static final int CELL_INVALID = 3; 	 ///< the cell is invalid
 
   /**
    * A simple way of representing the pieces of the board.
