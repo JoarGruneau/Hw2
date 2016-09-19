@@ -31,12 +31,9 @@ public class Player {
             GameState best_move=nextStates.firstElement();
             System.err.println("new turn -------------------------------------------------");
             for(GameState tmp_state: nextStates){ 
-                tmp_value_move=searchMinMax(tmp_state, 
-                        Constants.CELL_O, max_depth, value_loss,value_win);
-                    System.err.println(tmp_value_move);
-                    System.err.println(tmp_state.toString(Constants.CELL_O));
+                tmp_value_move=-negaMax(tmp_state, 5,value_loss, value_win, -1);
                 if( tmp_value_move>=best_value_move){
-                    if(tmp_state.isXWin()){ // Prohibits slow play, otherwise alg will value a win 3 moves away same as this
+                    if(tmp_state.isXWin()){
                         best_move=tmp_state;
                         break;
                     }
@@ -57,61 +54,33 @@ public class Player {
         }
     }
 
-    public int searchMinMax(GameState game_state, int player, int depth, 
-            int alpha, int beta){
-        Vector<GameState> nextStates = new Vector<>();
-        game_state.findPossibleMoves(nextStates); // I guess you can run this after depth check and EOG check to save time?
-        int best_move;
-
-        if(game_state.isEOG()){
-            return valueEnd(game_state);
+    public int negaMax(GameState gameState, int depth, int alpha, int beta,
+            int colour){
+        int tmpValue;
+        if(gameState.isEOG()){
+            return valueEnd(gameState)*colour;
         }
         else if(depth==0){
-                    
-            if(player==Constants.CELL_X){
-                return value(game_state, Constants.CELL_X)
-                        -value(game_state, Constants.CELL_O);
-            }
-            else{
-                return -(value(game_state, Constants.CELL_O)
-                        -value(game_state, Constants.CELL_X));
-            }
-        
+            return value(gameState)*colour;
         }
         else{
-        
-        if(player==Constants.CELL_X){
-            best_move=value_loss;
-            for(GameState state:nextStates){
-                int move = searchMinMax(state,
-                        Constants.CELL_O, depth-1, alpha, beta);
-                if(move>=beta){
-                    return beta;
+            Vector<GameState> lNextStates = new Vector<>();
+            gameState.findPossibleMoves(lNextStates);
+            
+            int bestMove=-1000;
+            for(GameState childState:lNextStates){
+                tmpValue=-negaMax(childState, depth-1,-beta,-alpha, -colour);
+                bestMove=Math.max(bestMove, tmpValue);
+                alpha=Math.max(alpha, tmpValue);
+                if(alpha>=beta){
+                    break;
                 }
-                else if(move>alpha){
-                    alpha=move;
-                }
-                //best_move=Math.max(move, best_move);
+                
             }
-            return alpha;
-        }
-        else{
-            best_move=value_win;
-            for(GameState state:nextStates){
-                int move = searchMinMax(state,
-                        Constants.CELL_X, depth-1, alpha,beta);
-                if(move<=alpha){
-                    return alpha;
-                }
-                else if(move<beta){
-                    beta=move;
-                }
-            }
-            return beta;
+            
+            return bestMove;
             
         }
-        }
-
     }
 
     
@@ -128,12 +97,17 @@ public class Player {
         }
         
     }
-    public int value(GameState game_state, int player){
+    public int value(GameState game_state){
         // Returns value of all 76 rows. In total 76*4 cells are checked, right?
-        return valueRows(game_state, player)
-                + valueColumns(game_state, player)
-                + valueLayers(game_state, player)
-                + valueDiagonals(game_state, player);
+        return valueRows(game_state, Constants.CELL_X)
+                + valueColumns(game_state, Constants.CELL_X)
+                + valueLayers(game_state, Constants.CELL_X)
+                + valueDiagonals(game_state, Constants.CELL_X)
+                - valueRows(game_state, Constants.CELL_O)
+                - valueColumns(game_state, Constants.CELL_O)
+                - valueLayers(game_state, Constants.CELL_O)
+                - valueDiagonals(game_state, Constants.CELL_O);
+
     }
     public int valueDiagonals(GameState game_state, int player){
         // Returns the value of the 24 normal diagonals and the 4 main diagonals
