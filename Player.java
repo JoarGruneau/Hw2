@@ -4,16 +4,8 @@ import java.util.*;
 public class Player {
     int value_loss=-1000;
     int value_win=1000;
-    int value_tie=-100;
-    /**
-     * Performs a mo
-     *
-     * @param gameState
-     *            the current state of the board
-     * @param deadline
-     *            time before which we must have returned
-     * @return the next state the board is in after our move
-     */
+    int value_tie=0;
+
     public GameState play(final GameState gameState, final Deadline deadline) {
         Vector<GameState> nextStates = new Vector<GameState>();
         gameState.findPossibleMoves(nextStates);
@@ -27,12 +19,8 @@ public class Player {
             int best_value_move=value_loss;
             int tmp_value_move;
             GameState best_move=nextStates.firstElement();
-            System.err.println("new turn -------------------------------------------------");
             for(GameState tmp_state: nextStates){ 
-                tmp_value_move=searchMinMax(tmp_state, 
-                        Constants.CELL_O, 5, value_loss,value_win);
-                    System.err.println(tmp_value_move);
-                    System.err.println(tmp_state.toString(Constants.CELL_O));
+                tmp_value_move=-negaMax(tmp_state, 5,value_loss, value_win, -1);
                 if( tmp_value_move>=best_value_move){
                     if(tmp_state.isXWin()){
                         best_move=tmp_state;
@@ -55,65 +43,6 @@ public class Player {
         }
     }
 
-    public int searchMinMax(GameState game_state, int player, int depth, 
-            int alpha, int beta){
-        Vector<GameState> nextStates = new Vector<>();
-        game_state.findPossibleMoves(nextStates);
-        int best_move;
-
-        if(game_state.isEOG()){
-            return valueEnd(game_state);
-        }
-        else if(depth==0){
-                    
-            if(player==Constants.CELL_X){
-                return value(game_state, Constants.CELL_X)
-                        -value(game_state, Constants.CELL_O);
-            }
-            else{
-                return -(value(game_state, Constants.CELL_O)
-                        -value(game_state, Constants.CELL_X));
-            }
-        
-        }
-        else{
-        
-        if(Constants.CELL_X==player){
-            best_move=value_loss;
-            for(GameState state:nextStates){
-                int move = searchMinMax(state,
-                        Constants.CELL_O, depth-1, alpha, beta);
-                if(move>=beta){
-                    return beta;
-                }
-                else if(move>alpha){
-                    alpha=move;
-                }
-                //best_move=Math.max(move, best_move);
-            }
-            return alpha;
-        }
-        else{
-            best_move=value_win;
-            for(GameState state:nextStates){
-                int move = searchMinMax(state,
-                        Constants.CELL_X, depth-1, alpha,beta);
-                if(move<=alpha){
-                    return alpha;
-                }
-                else if(move<beta){
-                    beta=move;
-                }
-            }
-            return beta;
-            
-        }
-        }
-
-    }
-
-    
-    
     public int valueEnd(GameState game_state){
         if(game_state.isXWin()){
             return value_win;
@@ -126,10 +55,13 @@ public class Player {
         }
         
     }
-    public int value(GameState game_state, int player){
-        return valueRows(game_state, player)
-            + valueColumns(game_state, player)
-                +valueDiagonals(game_state, player);
+    public int value(GameState game_state){
+        return valueRows(game_state, Constants.CELL_X)
+            + valueColumns(game_state, Constants.CELL_X)
+                +valueDiagonals(game_state, Constants.CELL_X)
+                -valueRows(game_state, Constants.CELL_O)
+                -valueColumns(game_state, Constants.CELL_O)
+                -valueDiagonals(game_state, Constants.CELL_O);
     }
     public int valueDiagonals(GameState game_state, int player){
         return valueDiagonal(game_state, player, 0,-1)+
@@ -157,61 +89,74 @@ public class Player {
         return tmp_value_diagonal*tmp_value_diagonal;
     }
     public int valueRows(GameState game_state, int player){
-        int col;
-        int row=0;
         int tmp_value=0;
         int tmp_value_row;
-        int cell=game_state.at(0, 0);
-        while(cell!= Constants.CELL_INVALID){
+        int cell;
+        for(int row=0; row<4;row++){
             tmp_value_row=0;
-            col=0;
-            while(cell!=Constants.CELL_INVALID){
+            for(int col=0;col<4;col++){
+                cell=game_state.at(row, col);
                 if(cell==player){
                     tmp_value_row++;
                 }
-                else if(cell==Constants.CELL_EMPTY){}
-                else{
+                else if(cell!=Constants.CELL_EMPTY){
                     tmp_value_row=0;
                     break; 
                 }
-                col++;
-                cell=game_state.at(row, col);
                 
             }
             tmp_value+=tmp_value_row*tmp_value_row;
-            row++;
-            cell=game_state.at(row, 0);
         }
         return tmp_value;
     }
     public int valueColumns(GameState game_state, int player){
-        int col=0;
-        int row;
         int tmp_value=0;
         int tmp_value_column;
-        int cell=game_state.at(0, 0);
-        while(cell!= Constants.CELL_INVALID){
+        int cell;
+        for(int col=0;col<4;col++){
             tmp_value_column=0;
-            row=0;
-            while(cell!=Constants.CELL_INVALID){
+            for(int row=0;row<4;row++){
+                cell=game_state.at(row, col);
                 if(cell==player){
                     tmp_value_column++;
                 }
-                else if(cell==Constants.CELL_EMPTY){
-                }
-                else{
+                else if(cell!=Constants.CELL_EMPTY){
                     tmp_value_column=0;
                     break;
                 }
-                row++;
-                cell=game_state.at(row, col);
                 
             }
             tmp_value+=tmp_value_column*tmp_value_column;
-            col++;
-            cell=game_state.at(0, col);
         }
         return tmp_value;
+    }
+    public int negaMax(GameState gameState, int depth, int alpha, int beta,
+            int colour){
+        int tmpValue;
+        if(gameState.isEOG()){
+            return valueEnd(gameState)*colour;
+        }
+        else if(depth==0){
+            return value(gameState)*colour;
+        }
+        else{
+            Vector<GameState> lNextStates = new Vector<>();
+            gameState.findPossibleMoves(lNextStates);
+            
+            int bestMove=-1000;
+            for(GameState childState:lNextStates){
+                tmpValue=-negaMax(childState, depth-1,-beta,-alpha, -colour);
+                bestMove=Math.max(bestMove, tmpValue);
+                alpha=Math.max(alpha, tmpValue);
+                if(alpha>=beta){
+                    break;
+                }
+                
+            }
+            
+            return bestMove;
+            
+        }
     }
 
 
