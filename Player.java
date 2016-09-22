@@ -37,16 +37,22 @@ public class Player {
             return new GameState(gameState, new Move());
         }
 
-        /*int nr_occupied_cells = nrOccupiedCells(gameState);
-        if(nr_occupied_cells < 20){
+        /*
+        Since the branching factor is determined by the nr of occupied cells,
+        we can base the max_depth on this number and increase it if there are
+        many occupied cells at the start.
+        */
+        int nr_occupied_cells = nrOccupiedCells(gameState);
+        if(nr_occupied_cells < 35){
             max_depth = 2;
-        }else if(nr_occupied_cells < 34){
+        }else if(nr_occupied_cells < 50){
             max_depth = 3;
         }else{
             max_depth = 4;
-        }*/
+        }
                     
         if(gameState.getNextPlayer()==Constants.CELL_O){
+            // Iterative negaMax with extra_depth = 1 gets 97 aswell, but slightly slower
             //GameState best_move = iterativeNegaMax(nextStates, deadline, initialTimeLeft);
             GameState best_move = maxDepthNegaMax(nextStates, deadline, initialTimeLeft);
                     
@@ -202,16 +208,11 @@ public class Player {
         
     }
     public int value(GameState game_state){
-        // Returns value of all 76 rows. In total 76*4 cells are checked, right?
+        // ALWAYS computes value from perspective of player X.
         return valueRows(game_state, Constants.CELL_X, Constants.CELL_O)
                 + valueColumns(game_state, Constants.CELL_X, Constants.CELL_O)
                 + valueLayers(game_state, Constants.CELL_X, Constants.CELL_O)
-                + valueDiagonals(game_state, Constants.CELL_X, Constants.CELL_O)
-                - valueRows(game_state, Constants.CELL_O, Constants.CELL_X)
-                - valueColumns(game_state, Constants.CELL_O, Constants.CELL_X)
-                - valueLayers(game_state, Constants.CELL_O, Constants.CELL_X)
-                - valueDiagonals(game_state, Constants.CELL_O, Constants.CELL_X);
-
+                + valueDiagonals(game_state, Constants.CELL_X, Constants.CELL_O);
     }
     public int valueDiagonals(GameState game_state, int player, int opposite){
         // Returns the value of the 24 normal diagonals and the 4 main diagonals
@@ -223,6 +224,7 @@ public class Player {
     public int valueMainDiagonals(GameState game_state, int player, int opposite){
         // Returns the value of the 4 main diagonals
         int tmp_value = 0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -245,23 +247,16 @@ public class Player {
                     row += direction_row;
                     col += direction_col;
                 }
-                if(tmp_opposite_cells == 3 && tmp_player_cells == 0){ 
-                    // If opponent can win in next move, row is worth a loss
-                    tmp_value += (player == Constants.CELL_X) ? value_loss : value_win;
-                }else if(tmp_opposite_cells != 0){
-                    // If opponent has a cell on the current row, row is worth 0
-                    tmp_value += 0;
-                }else{
-                    tmp_value += tmp_player_cells;
-                    //tmp_value += heuristicMultiplier(tmp_player_cells);
-                }
+                tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
         }    
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
     public int valueDiagonalRows(GameState game_state, int player, int opposite){
         // Returns value of the 8 normal diagonals over the rows
         int tmp_value = 0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -283,14 +278,16 @@ public class Player {
                     layer += direction;
                 }
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
 
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
     public int valueDiagonalColumns(GameState game_state, int player, int opposite){
         // Returns value of the 8 normal diagonals over the columns
         int tmp_value = 0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -312,14 +309,16 @@ public class Player {
                     layer += direction;
                 }
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
 
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
     public int valueDiagonalLayers(GameState game_state, int player, int opposite){
         // Returns value of the 8 normal diagonals over the layers
         int tmp_value = 0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -340,18 +339,19 @@ public class Player {
                     }
                     col += direction;
                 }
-                
+
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
 
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
 
     public int valueRows(GameState game_state, int player, int opposite){
-        // Rewritten for 3D
         // Returns value of 16 rows
         int tmp_value = 0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -368,15 +368,16 @@ public class Player {
                     }
                 }
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
 
     public int valueColumns(GameState game_state, int player, int opposite){
-        //Rewritten for 3D
         // Returns value of 16 rows
         int tmp_value=0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -394,14 +395,16 @@ public class Player {
                     
                 }
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
             }
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
 
     public int valueLayers(GameState game_state, int player, int opposite){
         // Returns value of 16 rows
         int tmp_value=0;
+        int tmp_value_opposite = 0;
         int tmp_player_cells;
         int tmp_opposite_cells;
         int cell;
@@ -418,16 +421,17 @@ public class Player {
                     }
                 }
                 tmp_value += heuristicRowValue(tmp_player_cells, tmp_opposite_cells, player, opposite);
+                tmp_value_opposite += heuristicRowValue(tmp_opposite_cells, tmp_player_cells, opposite, player);
 
             }
         }
-        return tmp_value;
+        return tmp_value - tmp_value_opposite;
     }
 
     public int heuristicRowValue(int player_cells, int opposite_cells, int player, int opposite){
         if(opposite_cells == 3 && player_cells == 0){ 
-            // If opponent can win in next move, row is worth a loss
-            return (player == Constants.CELL_X) ? value_loss : value_win;
+            // If opponent can win in next move, row is worth a big minus
+            return -10;
         }else if(opposite_cells != 0){
             // If opponent has a cell on the current row, row is worth 0
             return 0;
@@ -443,7 +447,6 @@ public class Player {
     }
 
     public String getGamestateString(GameState gamestate){
-        // NEEDS TO IMPLEMENT SYMMETRY BREAKING
         String return_str = "";
         int nr_cells = BOARD_SIZE*BOARD_SIZE*BOARD_SIZE;
         for(int i = 0; i< nr_cells; i++){
@@ -479,13 +482,4 @@ public class Player {
         return occupied_cells;
     }
 
-    /*public void orderStateList(Vector<GameState> nextStates){
-        Collections.sort();
-    }*/
 }
-
-/*public class stateValuePair{
-    public GameState gamestate;
-    public int value;
-}
-*/
