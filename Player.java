@@ -5,6 +5,7 @@ public class Player {
     int value_loss=-1000;
     int value_win=1000;
     int value_tie=0;
+    int boardSize=4;
 
     public GameState play(final GameState gameState, final Deadline deadline) {
         Vector<GameState> nextStates = new Vector<GameState>();
@@ -15,32 +16,28 @@ public class Player {
             return new GameState(gameState, new Move());
         }
                     
-        if(gameState.getNextPlayer()==Constants.CELL_O){
-            int best_value_move=value_loss;
-            int tmp_value_move;
-            GameState best_move=nextStates.firstElement();
-            for(GameState tmp_state: nextStates){ 
+        int best_value_move=value_loss;
+        int tmp_value_move;
+        GameState best_move=nextStates.firstElement();
+        for(GameState tmp_state: nextStates){
+            if(gameState.getNextPlayer()==Constants.CELL_O){
                 tmp_value_move=-negaMax(tmp_state, 5,value_loss, value_win, -1);
-                if( tmp_value_move>=best_value_move){
-                    if(tmp_state.isXWin()){
-                        best_move=tmp_state;
-                        break;
-                    }
-                    best_value_move=tmp_value_move;
-                    best_move=tmp_state;
-
-                }
             }
-                    
-            return best_move;
-        }
+            else{
+               tmp_value_move=negaMax(tmp_state, 5,value_loss, value_win, -1); 
+            }
+            if( tmp_value_move>=best_value_move){
+                if(tmp_state.isXWin()){
+                    best_move=tmp_state;
+                    break;
+                }
+                best_value_move=tmp_value_move;
+                best_move=tmp_state;
 
-        else{
-            Random random = new Random();
-            GameState move=nextStates.elementAt(
-                    random.nextInt(nextStates.size()));
-            return move;
+            }
         }
+                    
+        return best_move;
     }
 
     public int valueEnd(GameState game_state){
@@ -63,38 +60,49 @@ public class Player {
                 -valueColumns(game_state, Constants.CELL_O)
                 -valueDiagonals(game_state, Constants.CELL_O);
     }
+    /**
     public int valueDiagonals(GameState game_state, int player){
         return valueDiagonal(game_state, player, 0,-1)+
                 valueDiagonal(game_state, player, 3,1);
     }
-    public int valueDiagonal(GameState game_state, int player,
-            int start_row, int up_or_down){
+    * */
+    public int valueDiagonals(GameState game_state, int player){
         // 1 for go up and -1 for go down
-        int tmp_value_diagonal=0;
-        int col=0;
-        int cell=game_state.at(start_row,col);
-        while(cell!=Constants.CELL_INVALID){
+        int value_diagonals=0;
+        int tmp_value=0;
+        int cell;
+        for(int index=0;index<boardSize; index++){
+            cell=game_state.at(index, index);
             if(cell==player){
-                tmp_value_diagonal++;
+                tmp_value++;
             }
-            else if(cell== Constants.CELL_EMPTY){}
-            else{
-                tmp_value_diagonal=0;
+            else if(cell!= Constants.CELL_EMPTY){
+                tmp_value=0;
                 break;
             }
-            col++;
-            start_row+=up_or_down;
-            cell=game_state.at(start_row,col);
         }
-        return tmp_value_diagonal*tmp_value_diagonal;
+        value_diagonals+= tmp_value*tmp_value;
+        tmp_value=0;
+        for(int index=boardSize-1;index>-1; index--){
+            cell=game_state.at(index, index);
+            if(cell==player){
+                tmp_value++;
+            }
+            else if(cell!= Constants.CELL_EMPTY){
+                tmp_value=0;
+                break;
+            }
+        }
+        value_diagonals+= tmp_value*tmp_value;
+        return value_diagonals;
     }
     public int valueRows(GameState game_state, int player){
         int tmp_value=0;
         int tmp_value_row;
         int cell;
-        for(int row=0; row<4;row++){
+        for(int row=0; row<boardSize;row++){
             tmp_value_row=0;
-            for(int col=0;col<4;col++){
+            for(int col=0;col<boardSize;col++){
                 cell=game_state.at(row, col);
                 if(cell==player){
                     tmp_value_row++;
@@ -113,9 +121,9 @@ public class Player {
         int tmp_value=0;
         int tmp_value_column;
         int cell;
-        for(int col=0;col<4;col++){
+        for(int col=0;col<boardSize;col++){
             tmp_value_column=0;
-            for(int row=0;row<4;row++){
+            for(int row=0;row<boardSize;row++){
                 cell=game_state.at(row, col);
                 if(cell==player){
                     tmp_value_column++;
@@ -127,6 +135,7 @@ public class Player {
                 
             }
             tmp_value+=tmp_value_column*tmp_value_column;
+
         }
         return tmp_value;
     }
